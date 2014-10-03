@@ -1,23 +1,21 @@
 require 'minitest/autorun'
 require 'rack/test'
 require '../hello_rack'
+require '../middleware'
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
 
-  def app
-    HelloRack.new
-  end
-
   def setup
-    get "/"
+    @app = HelloRack.new
+    @middleware = Middleware.new(@app, { limit: 100 })
   end
 
-  def test_response_status
-    assert last_response.ok?
+  def test_response
+    assert_equal [200, {"Content-Type"=>"text/html"}, "Hello Rack"], @app.call({})
   end
 
-  def test_response_body
-    assert_equal "Hello Rack", last_response.body
+  def test_X_RateLimit_Limit_header
+    assert_equal 100, @middleware.call({})[1]['X-RateLimit-Limit']
   end
 end
