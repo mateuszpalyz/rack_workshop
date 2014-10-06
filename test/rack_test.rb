@@ -7,7 +7,7 @@ class RackTest < Minitest::Test
 
   def app
     rack_app = lambda { |env| [200, { 'Content-Type' => 'text/html' }, "Hello Rack"] }
-    Middleware.new(rack_app, { limit: 100 })
+    RackWorkshop::Middleware.new(rack_app, { limit: 100 })
   end
 
   def setup
