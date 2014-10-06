@@ -1,6 +1,6 @@
 require 'minitest/autorun'
 require 'rack/test'
-require '../lib/rack_workshop/middleware'
+require './lib/rack_workshop/middleware'
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
@@ -25,5 +25,11 @@ class RackTest < Minitest::Test
   def test_X_RateLimit_Remaining_header
     3.times { get '/' }
     assert_equal 96, last_response.header['X-RateLimit-Remaining']
+  end
+
+  def test_exceeding_limit_header
+    100.times { get '/' }
+    assert_equal 429, last_response.status
+    assert_equal 'Too many Requests', last_response.body
   end
 end
