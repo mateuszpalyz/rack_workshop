@@ -21,4 +21,9 @@ class RackTest < Minitest::Test
   def test_X_RateLimit_Limit_header
     assert_equal 100, last_response.header['X-RateLimit-Limit']
   end
+
+  def test_X_RateLimit_Remaining_header
+    3.times { get '/' }
+    assert_equal 96, last_response.header['X-RateLimit-Remaining']
+  end
 end
