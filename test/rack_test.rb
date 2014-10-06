@@ -46,6 +46,13 @@ class RackTest < Minitest::Test
     assert last_response.ok?
   end
 
+  def test_separate_limit_for_each_client
+    3.times { get '/', {}, 'REMOTE_ADDR' => '10.0.0.1' }
+    assert_equal 97, last_response.header['X-RateLimit-Remaining']
+    get '/', {}, 'REMOTE_ADDR' => '10.0.0.2'
+    assert_equal 99, last_response.header['X-RateLimit-Remaining']
+  end
+
   def teardown
     Timecop.return
   end
