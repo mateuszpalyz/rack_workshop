@@ -1,6 +1,6 @@
 require 'minitest/autorun'
 require 'rack/test'
-require '../lib/middleware'
+require '../lib/rack_workshop/middleware'
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
