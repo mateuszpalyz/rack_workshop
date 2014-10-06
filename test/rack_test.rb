@@ -1,6 +1,7 @@
 require 'minitest/autorun'
 require 'rack/test'
 require './lib/rack_workshop/middleware'
+require 'timecop'
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
@@ -11,6 +12,7 @@ class RackTest < Minitest::Test
   end
 
   def setup
+    Timecop.freeze(Time.now)
     get '/'
   end
 
@@ -31,5 +33,20 @@ class RackTest < Minitest::Test
     100.times { get '/' }
     assert_equal 429, last_response.status
     assert_equal 'Too many Requests', last_response.body
+  end
+
+  def test_limit_header
+    assert_equal Time.now + 3600, last_response.header['X-RateLimit-Reset']
+  end
+
+  def test_limit_header_reset_after_one_hour
+    100.times { get '/' }
+    Timecop.freeze(Time.now + 3601)
+    get '/'
+    assert last_response.ok?
+  end
+
+  def teardown
+    Timecop.return
   end
 end
