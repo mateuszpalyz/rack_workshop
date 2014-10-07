@@ -41,6 +41,7 @@ class RackTest < Minitest::Test
 
   def test_limit_header_reset_after_one_hour
     100.times { get '/' }
+    assert_equal 429, last_response.status
     Timecop.freeze(Time.now + 3601)
     get '/'
     assert last_response.ok?
