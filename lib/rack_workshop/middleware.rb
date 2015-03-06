@@ -1,17 +1,20 @@
 module RackWorkshop
+  require 'rack_workshop/in_memory_store'
+
   class Middleware
     def initialize(app, options = {}, &block)
       @app = app
       @options = options
       @calls = {}
       @block = block
+      @store = options[:store] || InMemoryStore.new
     end
 
     def call(env)
       set_client_identifier(env)
 
       if @client_identifier
-        @calls[@client_identifier] ||= Hash.new(0)
+        @store.set(@client_identifier, Hash.new(0)) unless @store.get(@client_identifier)
 
         set_timestamp_for_first_call(env)
         reset_limit(env) if reset_limit?(env)
@@ -32,16 +35,15 @@ module RackWorkshop
     end
 
     def limit_exceeded?(env)
-      @calls[@client_identifier]['calls_number'] > @options[:limit]
+      @store.get(@client_identifier)['calls_number'] > @options[:limit]
     end
 
     def reset_limit?(env)
-      Time.now - @calls[@client_identifier]['timestamp'] > (@options[:reset_in] || 3600)
+      Time.now - @store.get(@client_identifier)['timestamp'] > (@options[:reset_in] || 3600)
     end
 
     def reset_limit(env)
-      @calls[@client_identifier]['timestamp'] = Time.now
-      @calls[@client_identifier]['calls_number'] = 0
+      @store.set(@client_identifier, { 'timestamp' => Time.now, 'calls_number' => 0 })
     end
 
     def bad_response
@@ -49,10 +51,11 @@ module RackWorkshop
     end
 
     def good_response(env)
+      client_data = @store.get(@client_identifier)
       status, headers, response = basic_response env
       headers['X-RateLimit-Limit'] = @options[:limit]
-      headers['X-RateLimit-Remaining'] = @options[:limit] - @calls[@client_identifier]['calls_number']
-      headers['X-RateLimit-Reset'] = @calls[@client_identifier]['timestamp'] + 3600
+      headers['X-RateLimit-Remaining'] = @options[:limit] - client_data['calls_number']
+      headers['X-RateLimit-Reset'] = client_data['timestamp'] + 3600
       [status, headers, response]
     end
 
@@ -61,11 +64,12 @@ module RackWorkshop
     end
 
     def increase_calls_number(env)
-      @calls[@client_identifier]['calls_number'] += 1
+      client_data = @store.get(@client_identifier)
+      @store.set(@client_identifier, { 'timestamp' =>  client_data['timestamp'],'calls_number' => client_data['calls_number'] + 1})
     end
 
     def set_timestamp_for_first_call(env)
-      @calls[@client_identifier]['timestamp'] = Time.now if @calls[@client_identifier]['calls_number'] == 0
+      @store.set(@client_identifier, { 'timestamp' => Time.now, 'calls_number' => 0}) if @store.get(@client_identifier)['calls_number'] == 0
     end
   end
 end
