@@ -1,9 +1,10 @@
 module RackWorkshop
   class Middleware
-    def initialize(app, options = {})
+    def initialize(app, options = {}, &block)
       @app = app
       @options = options
       @calls = {}
+      @block = block
     end
 
     def call(env)
