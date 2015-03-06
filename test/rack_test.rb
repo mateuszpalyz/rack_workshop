@@ -5,6 +5,7 @@ require 'rack/test'
 require 'timecop'
 require 'rack_workshop/middleware'
 require 'rack_workshop/simple_rack_app'
+require 'dalli'
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
@@ -79,6 +80,21 @@ class RackTest < Minitest::Test
 
     get '/', {}
     assert_nil last_response.header['X-RateLimit-Remaining']
+  end
+
+  def test_dalli_as_a_store_mechanism
+    options = { :namespace => "app_v1", :compress => true }
+    dc = Dalli::Client.new('localhost:11211', options)
+    @app = RackWorkshop::Middleware.new(SimpleRackApp.new, { limit: 100, store: dc }) { |env| Rack::Request.new(env).params['api_token'] }
+
+    get '/', { 'api_token' => 'aaa' }
+    assert_equal 99, last_response.header['X-RateLimit-Remaining']
+
+    get '/', { 'api_token' => 'bbb' }
+    assert_equal 99, last_response.header['X-RateLimit-Remaining']
+
+    get '/', { 'api_token' => 'bbb' }
+    assert_equal 98, last_response.header['X-RateLimit-Remaining']
   end
 
   def teardown
