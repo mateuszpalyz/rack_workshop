@@ -53,9 +53,9 @@ module RackWorkshop
     def good_response(env)
       client_data = @store.get(@client_identifier)
       status, headers, response = basic_response env
-      headers['X-RateLimit-Limit'] = @options[:limit]
-      headers['X-RateLimit-Remaining'] = @options[:limit] - client_data['calls_number']
-      headers['X-RateLimit-Reset'] = client_data['timestamp'] + 3600
+      headers['X-RateLimit-Limit'] = (@options[:limit]).to_s
+      headers['X-RateLimit-Remaining'] = (@options[:limit] - client_data['calls_number']).to_s
+      headers['X-RateLimit-Reset'] = (client_data['timestamp'] + 3600).to_s
       [status, headers, response]
     end
 
