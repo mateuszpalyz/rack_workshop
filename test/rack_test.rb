@@ -1,7 +1,10 @@
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
 require 'minitest/autorun'
 require 'rack/test'
-require './lib/rack_workshop/middleware'
 require 'timecop'
+require 'rack_workshop/middleware'
+require 'rack_workshop/simple_rack_app'
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
