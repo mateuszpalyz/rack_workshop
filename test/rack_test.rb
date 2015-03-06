@@ -58,6 +58,29 @@ class RackTest < Minitest::Test
     assert_equal 99, last_response.header['X-RateLimit-Remaining']
   end
 
+  def test_rate_limiter_custom_client_identification
+    @app = RackWorkshop::Middleware.new(SimpleRackApp.new, { limit: 100 }) { |env| Rack::Request.new(env).params['api_token'] }
+
+    get '/', { 'api_token' => 'aaa' }
+    assert_equal 99, last_response.header['X-RateLimit-Remaining']
+
+    get '/', { 'api_token' => 'bbb' }
+    assert_equal 99, last_response.header['X-RateLimit-Remaining']
+
+    get '/', { 'api_token' => 'bbb' }
+    assert_equal 98, last_response.header['X-RateLimit-Remaining']
+
+    get '/', { 'api_token' => 'aaa' }
+    assert_equal 98, last_response.header['X-RateLimit-Remaining']
+  end
+
+  def test_rate_limiter_when_block_returns_nil
+    @app = RackWorkshop::Middleware.new(SimpleRackApp.new, { limit: 100 }) { nil }
+
+    get '/', {}
+    assert_nil last_response.header['X-RateLimit-Remaining']
+  end
+
   def teardown
     Timecop.return
     @app = nil
